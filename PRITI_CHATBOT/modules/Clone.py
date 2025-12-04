@@ -20,24 +20,25 @@ clonebotdb = mongodb.clonebotdb
 
 @app.on_message(filters.command(["clone", "host", "deploy"]))
 async def clone_txt(client, message):
-    if len(message.command) > 1:
 
+    if len(message.command) > 1:
         bot_token = message.text.split("/clone", 1)[1].strip()
         mi = await message.reply_text("Please wait while I check the bot token.")
 
-        # --- User Clone Limit (Owner unlimited) ---
+        # --- User Clone Limit ---
         user_id = message.from_user.id
 
         if user_id != int(OWNER_ID):
             existing_clone = await clonebotdb.find_one({"user_id": user_id})
             if existing_clone:
                 await mi.edit_text(
-                    f"**⚠️ You can clone only 1 bot!**\n"
-                    f"**You already cloned:** @{existing_clone['username']}\n\n"
-                    f"🗑 Remove clone → `/delclone {existing_clone['token']}`"
+                    f"⚠️ You can clone only 1 bot!\n"
+                    f"You already cloned @{existing_clone['username']}\n\n"
+                    f"Remove clone → /delclone {existing_clone['token']}"
                 )
                 return
 
+        # START BOT
         try:
             ai = Client(
                 bot_token,
@@ -46,276 +47,200 @@ async def clone_txt(client, message):
                 bot_token=bot_token,
                 plugins=dict(root="PRITI_CHATBOT/mplugin")
             )
-
             await ai.start()
             bot = await ai.get_me()
             bot_id = bot.id
 
-            user_id = message.from_user.id
             await save_clonebot_owner(bot_id, user_id)
 
-            await ai.set_bot_commands(
-                [
-                    BotCommand("start", "Start the bot"),
-                    BotCommand("help", "Get the help menu"),
-                    BotCommand("clone", "Make your own chatbot"),
-                    BotCommand("ping", "Check if the bot is alive or dead"),
-                    BotCommand("lang", "Select bot reply language"),
-                    BotCommand("chatlang", "Get current using lang for chat"),
-                    BotCommand("resetlang", "Reset to default bot reply lang"),
-                    BotCommand("id", "Get users user_id"),
-                    BotCommand("stats", "Check bot stats"),
-                    BotCommand("gcast", "Broadcast any message to groups/users"),
-                    BotCommand("chatbot", "Enable or disable chatbot"),
-                    BotCommand("status", "Check chatbot enable or disable in chat"),
-                    BotCommand("shayri", "Get random shayri for love"),
-                    BotCommand("ask", "Ask anything from chatgpt"),
-                    BotCommand("repo", "Get chatbot source code"),
-                ]
-            )
+            await ai.set_bot_commands([
+                BotCommand("start", "Start the bot"),
+                BotCommand("help", "Help menu"),
+                BotCommand("clone", "Make your own bot"),
+                BotCommand("ping", "Check alive"),
+                BotCommand("lang", "Select language"),
+                BotCommand("chatlang", "Current chat lang"),
+                BotCommand("resetlang", "Reset lang"),
+                BotCommand("id", "User ID"),
+                BotCommand("stats", "Bot stats"),
+                BotCommand("gcast", "Broadcast"),
+                BotCommand("chatbot", "Enable/Disable AI"),
+                BotCommand("status", "Chatbot status"),
+                BotCommand("shayri", "Random shayri"),
+                BotCommand("ask", "Ask AI"),
+                BotCommand("repo", "Bot Source"),
+            ])
 
         except (AccessTokenExpired, AccessTokenInvalid):
-            await mi.edit_text("**Invalid bot token. Please provide a valid one.**")
+            await mi.edit_text("Invalid Bot Token ❌")
             return
 
-        except Exception as e:
+        except Exception:
             cloned_bot = await clonebotdb.find_one({"token": bot_token})
             if cloned_bot:
-                await mi.edit_text("**🤖 Your bot is already cloned ✅**")
-                return
+                return await mi.edit_text("Your bot is already cloned ✔")
+            return
 
-        await mi.edit_text("**Cloning process started. Please wait for the bot to start.**")
+        await mi.edit_text("Cloning process started…")
 
-try:
-    # ----- SAVE DETAILS -----
-    details = {
-        "bot_id": bot.id,
-        "is_bot": True,
-        "user_id": user_id,
-        "name": bot.first_name,
-        "token": bot_token,
-        "username": bot.username,
-    }
+        # -----------------------------------------------------------------
+        #   HERE IS YOUR FULL SUCCESS BLOCK (FIXED + INDENTED PROPERLY)
+        # -----------------------------------------------------------------
+        try:
+            # ----- SAVE DETAILS -----
+            details = {
+                "bot_id": bot.id,
+                "is_bot": True,
+                "user_id": user_id,
+                "name": bot.first_name,
+                "token": bot_token,
+                "username": bot.username,
+            }
 
-await clonebotdb.insert_one(details)
-CLONES.add(bot.id)
+            await clonebotdb.insert_one(details)
+            CLONES.add(bot.id)
 
-# ----- USER MENTION -----
-mention = f"[{message.from_user.first_name}](tg://user?id={user_id})"
+            # ----- USER MENTION -----
+            mention = f"[{message.from_user.first_name}](tg://user?id={user_id})"
 
-# ----- USER FULL DETAILS MESSAGE -----
-user_details = (
-    "✨ **Clone Successful!**\n\n"
-    "**👤 User Details:**\n"
-    f"• Name: {mention}\n"
-    f"• User ID:** `{user_id}`\n"
-    f"• Username:** @{message.from_user.username}\n\n"
-    
-    "**🤖 Bot Details:**\n"
-    f"• Bot Name:** {bot.first_name}\n"
-    f"• Bot Username:** @{bot.username}\n"
-    f"• Bot ID:** `{bot.id}`\n"
-    "• Status:** `Running Successfully ✓`\n\n"
-    
-    "**🔐 Bot Token (Hidden):**\n"
-    f"`{bot_token[:10]}*************************`\n\n"
+            # ----- USER FULL DETAILS -----
+            user_details = (
+                "✨ **Clone Successful!**\n\n"
+                "**👤 User Details:**\n"
+                f"• Name: {mention}\n"
+                f"• User ID: `{user_id}`\n"
+                f"• Username: @{message.from_user.username}\n\n"
 
-    f"Thanks {mention} ❤️\n"
-    "See your clone: `/cloned`\n"
-    f"Delete clone: `/delclone {bot_token}`"
-)
+                "**🤖 Bot Details:**\n"
+                f"• Bot Name: {bot.first_name}\n"
+                f"• Username: @{bot.username}\n"
+                f"• Bot ID: `{bot.id}`\n"
+                "• Status: Running Successfully ✓\n\n"
 
-# ----- SEND TO USER -----
-await message.reply_text(user_details, parse_mode="Markdown")
+                "**🔐 Bot Token (Hidden):**\n"
+                f"`{bot_token[:10]}*************************`\n\n"
 
-# ===============================
-#  SEND LOG TO OWNER (MAIN BOT OWNER)
-# ===============================
-owner_log = (
-    "🆕 **New Clone Created**\n\n"
-    f"👤 **User:** {mention} (`{user_id}`)\n"
-    f"🤖 **Bot:** @{bot.username}\n"
-    f"📛 **Bot ID:** `{bot.id}`\n"
-    f"🔢 **Token:** `{bot_token}`\n"
-)
+                f"Thanks {mention} ❤️\n"
+                "View clone: `/cloned`\n"
+                f"Delete clone: `/delclone {bot_token}`"
+            )
 
-await app.send_message(int(OWNER_ID), owner_log, parse_mode="Markdown")
+            await message.reply_text(user_details, parse_mode="Markdown")
 
-# ===============================
-#  SEND LOG TO LOGGER GROUP
-# ===============================
-try:
-    logger_msg = (
-        "📢 **New Clone Log**\n\n"
-        f"👤 User: {mention} (`{user_id}`)\n"
-        f"🤖 Bot: @{bot.username}\n"
-        f"🆔 Bot ID: `{bot.id}`\n"
-        f"🔑 Token: `{bot_token}`\n\n"
-        "🔥 Clone Completed Successfully!"
-    )
+            # ----- OWNER LOG -----
+            owner_log = (
+                "🆕 **New Clone Created**\n\n"
+                f"👤 User: {mention} (`{user_id}`)\n"
+                f"🤖 Bot: @{bot.username}\n"
+                f"🆔 Bot ID: `{bot.id}`\n"
+                f"🔑 Token: `{bot_token}`"
+            )
 
-    await app.send_message(config.LOGGER_GROUP, logger_msg, parse_mode="Markdown")
+            await app.send_message(int(OWNER_ID), owner_log, parse_mode="Markdown")
 
-except Exception as e:
-    print("Logger send error:", e)
+            # ----- LOGGER GROUP -----
+            try:
+                logger_msg = (
+                    "📢 **New Clone Log**\n\n"
+                    f"User: {mention}\n"
+                    f"Bot: @{bot.username}\n"
+                    f"Bot ID: `{bot.id}`\n"
+                    f"Token: `{bot_token}`"
+                )
+                await app.send_message(config.LOGGER_GROUP, logger_msg, parse_mode="Markdown")
+            except:
+                pass
+
+        except Exception as e:
+            await mi.edit_text(f"Error: `{e}`")
+            logging.exception(e)
+
+    else:
+        await message.reply_text("Send bot token\nExample: `/clone 123:ABC`")
 
 
+# ==================================================================
+# SHOW CLONED BOTS
+# ==================================================================
 @app.on_message(filters.command("cloned"))
 async def list_cloned_bots(client, message):
     try:
         user_id = message.from_user.id
 
-        # ------------ OWNER: See All Clones ------------
+        # OWNER: ALL BOTS
         if user_id == int(OWNER_ID):
-            cloned_bots = await clonebotdb.find().to_list(length=None)
-            if not cloned_bots:
-                return await message.reply_text("No bots have been cloned yet.")
-
-            total_clones = len(cloned_bots)
-            text = f"**👑 Total Cloned Bots:** {total_clones}\n\n"
-
-            for bot in cloned_bots:
+            bots = await clonebotdb.find().to_list(None)
+            if not bots:
+                return await message.reply_text("No clones yet.")
+            text = f"👑 Total Clones: {len(bots)}\n\n"
+            for b in bots:
                 text += (
-                    f"**🤖 Bot Username:** @{bot['username']}\n"
-                    f"**Bot Name:** {bot['name']}\n"
-                    f"**Bot ID:** `{bot['bot_id']}`\n"
-                    f"**Owner ID:** `{bot['user_id']}`\n\n"
+                    f"🤖 @{b['username']}\n"
+                    f"• Name: {b['name']}\n"
+                    f"• Bot ID: `{b['bot_id']}`\n"
+                    f"• Owner: `{b['user_id']}`\n\n"
                 )
-
             return await message.reply_text(text)
 
-        # ------------ USER: See Only Own Clone ------------
-        my_clone = await clonebotdb.find_one({"user_id": user_id})
+        # USER: ONLY OWN
+        mine = await clonebotdb.find_one({"user_id": user_id})
+        if not mine:
+            return await message.reply_text("❌ You have no cloned bot.")
 
-        if not my_clone:
-            return await message.reply_text("**❌ You have not cloned any bot yet.**")
-
-        # User sees ONLY his bot
-        text = (
-            "**🤖 Your Cloned Bot:**\n\n"
-            f"**Bot Username:** @{my_clone['username']}\n"
-            f"**Bot Name:** {my_clone['name']}\n"
-            f"**Bot ID:** `{my_clone['bot_id']}`\n"
+        await message.reply_text(
+            f"🤖 **Your Clone:**\n"
+            f"• @{mine['username']}\n"
+            f"• Bot ID: `{mine['bot_id']}`"
         )
 
-        return await message.reply_text(text)
-
     except Exception as e:
         logging.exception(e)
-        await message.reply_text("**An error occurred while listing cloned bots.**")
+        await message.reply_text("Error while listing clones.")
 
 
 
-@app.on_message(
-    filters.command(["deletecloned", "delcloned", "delclone", "deleteclone", "removeclone", "cancelclone"])
-)
+# ==================================================================
+# DELETE ONE CLONE
+# ==================================================================
+@app.on_message(filters.command(["deletecloned", "delcloned", "delclone", "deleteclone", "removeclone", "cancelclone"]))
 async def delete_cloned_bot(client, message):
-
     try:
         if len(message.command) < 2:
-            await message.reply_text("**⚠️ Please provide the bot token after the command.**")
-            return
+            return await message.reply_text("Usage:\n/delclone <bot_token>")
 
-        bot_token = " ".join(message.command[1:])
-        ok = await message.reply_text("**Checking the bot token...**")
+        bot_token = message.command[1]
+        ok = await message.reply_text("Checking token…")
 
         cloned_bot = await clonebotdb.find_one({"token": bot_token})
+        if not cloned_bot:
+            return await ok.edit_text("Invalid token ❌")
 
-        if cloned_bot:
-            await clonebotdb.delete_one({"token": bot_token})
+        await clonebotdb.delete_one({"token": bot_token})
 
-            try:
-                CLONES.remove(cloned_bot["bot_id"])
-            except:
-                pass
+        try:
+            CLONES.remove(cloned_bot["bot_id"])
+        except:
+            pass
 
-            await ok.edit_text(
-                f"**🤖 your cloned bot has been removed from my database ✅**\n"
-                f"**🔄 Kindly revoke your bot token from @botfather otherwise your bot will stop when @{app.username} will restart ☠️**"
-            )
-
-        else:
-            await message.reply_text(
-                "**Provide Bot Token after /delclone Command from @Botfather.**\n\n"
-                "**Example:** `/delclone bot token paste here`"
-            )
+        await ok.edit_text("✔ Bot clone removed.\nRevoke token from @BotFather.")
 
     except Exception as e:
-        await message.reply_text(f"**An error occurred while deleting the cloned bot:** {e}")
+        await message.reply_text(f"Error: {e}")
         logging.exception(e)
 
 
 
-async def restart_bots():
-
-    global CLONES
-
-    try:
-        logging.info("Restarting all cloned bots...")
-        bots = [bot async for bot in clonebotdb.find()]
-
-        async def restart_bot(bot):
-            bot_token = bot["token"]
-            ai = Client(
-                bot_token,
-                API_ID,
-                API_HASH,
-                bot_token=bot_token,
-                plugins=dict(root="PRITI_CHATBOT/mplugin")
-            )
-
-            try:
-                await ai.start()
-                bot_info = await ai.get_me()
-
-                await ai.set_bot_commands(
-                    [
-                        BotCommand("start", "Start the bot"),
-                        BotCommand("help", "Get the help menu"),
-                        BotCommand("clone", "Make your own chatbot"),
-                        BotCommand("ping", "Check if the bot is alive or dead"),
-                        BotCommand("lang", "Select bot reply language"),
-                        BotCommand("chatlang", "Get current using lang for chat"),
-                        BotCommand("resetlang", "Reset to default bot reply lang"),
-                        BotCommand("id", "Get users user_id"),
-                        BotCommand("stats", "Check bot stats"),
-                        BotCommand("gcast", "Broadcast any message to groups/users"),
-                        BotCommand("chatbot", "Enable or disable chatbot"),
-                        BotCommand("status", "Check chatbot enable or disable in chat"),
-                        BotCommand("shayri", "Get random shayri for love"),
-                        BotCommand("ask", "Ask anything from chatgpt"),
-                        BotCommand("repo", "Get chatbot source code"),
-                    ]
-                )
-
-                if bot_info.id not in CLONES:
-                    CLONES.add(bot_info.id)
-
-            except (AccessTokenExpired, AccessTokenInvalid):
-                await clonebotdb.delete_one({"token": bot_token})
-                logging.info(f"Removed expired or invalid token for bot ID: {bot['bot_id']}")
-
-            except Exception as e:
-                logging.exception(f"Error while restarting bot with token {bot_token}: {e}")
-
-        await asyncio.gather(*(restart_bot(bot) for bot in bots))
-
-    except Exception as e:
-        logging.exception("Error while restarting bots.")
-
-
-
+# ==================================================================
+# DELETE ALL (OWNER ONLY)
+# ==================================================================
 @app.on_message(filters.command("delallclone") & filters.user(int(OWNER_ID)))
 async def delete_all_cloned_bots(client, message):
-
     try:
-        a = await message.reply_text("**Deleting all cloned bots...**")
+        a = await message.reply_text("Deleting all clones…")
         await clonebotdb.delete_many({})
         CLONES.clear()
-
-        await a.edit_text("**All cloned bots have been deleted successfully ✅**")
+        await a.edit_text("All clones removed ✔")
         os.system(f"kill -9 {os.getpid()} && bash start")
-
     except Exception as e:
-        await a.edit_text(f"**An error occurred while deleting all cloned bots.** {e}")
+        await a.edit_text(f"Error: {e}")
         logging.exception(e)
