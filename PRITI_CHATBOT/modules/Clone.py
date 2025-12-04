@@ -87,49 +87,77 @@ async def clone_txt(client, message):
         await mi.edit_text("**Cloning process started. Please wait for the bot to start.**")
 
         try:
-            details = {
-                "bot_id": bot.id,
-                "is_bot": True,
-                "user_id": user_id,
-                "name": bot.first_name,
-                "token": bot_token,
-                "username": bot.username,
-            }
+            # ----- SAVE DETAILS -----
+details = {
+    "bot_id": bot.id,
+    "is_bot": True,
+    "user_id": user_id,
+    "name": bot.first_name,
+    "token": bot_token,
+    "username": bot.username,
+}
 
-            cloned_bots = clonebotdb.find()
-            cloned_bots_list = await cloned_bots.to_list(length=None)
-            total_clones = len(cloned_bots_list)
+await clonebotdb.insert_one(details)
+CLONES.add(bot.id)
 
-            await app.send_message(
-                int(OWNER_ID),
-                f"**#New_Clone**\n\n"
-                f"**Bot:- @{bot.username}**\n\n"
-                f"**Details:-**\n{details}\n\n"
-                f"**Total Cloned:-** {total_clones}"
-            )
+# ----- USER MENTION -----
+mention = f"[{message.from_user.first_name}](tg://user?id={user_id})"
 
-            await clonebotdb.insert_one(details)
+# ----- USER FULL DETAILS MESSAGE -----
+user_details = (
+    "✨ **Clone Successful!**\n\n"
+    "**👤 User Details:**\n"
+    f"• Name: {mention}\n"
+    f"• User ID:** `{user_id}`\n"
+    f"• Username:** @{message.from_user.username}\n\n"
+    
+    "**🤖 Bot Details:**\n"
+    f"• Bot Name:** {bot.first_name}\n"
+    f"• Bot Username:** @{bot.username}\n"
+    f"• Bot ID:** `{bot.id}`\n"
+    "• Status:** `Running Successfully ✓`\n\n"
+    
+    "**🔐 Bot Token (Hidden):**\n"
+    f"`{bot_token[:10]}*************************`\n\n"
 
-            CLONES.add(bot.id)
+    f"Thanks {mention} ❤️\n"
+    "See your clone: `/cloned`\n"
+    f"Delete clone: `/delclone {bot_token}`"
+)
 
-            await mi.edit_text(
-                f"**Bot @{bot.username} has been successfully cloned and started ✅.**\n"
-                f"**Remove clone by :- /delclone**\n"
-                f"**Check all cloned bot list by:- /cloned**"
-            )
+# ----- SEND TO USER -----
+await message.reply_text(user_details, parse_mode="Markdown")
 
-        except BaseException as e:
-            logging.exception("Error while cloning bot.")
-            await mi.edit_text(
-                f"⚠️ <b>Error:</b>\n\n<code>{e}</code>\n\n"
-                "**Forward this message to @The_LuckyX for assistance**"
-            )
+# ===============================
+#  SEND LOG TO OWNER (MAIN BOT OWNER)
+# ===============================
+owner_log = (
+    "🆕 **New Clone Created**\n\n"
+    f"👤 **User:** {mention} (`{user_id}`)\n"
+    f"🤖 **Bot:** @{bot.username}\n"
+    f"📛 **Bot ID:** `{bot.id}`\n"
+    f"🔢 **Token:** `{bot_token}`\n"
+)
 
-    else:
-        await message.reply_text(
-            "**Provide Bot Token after /clone Command from @Botfather.**\n\n"
-            "**Example:** `/clone bot token paste here`"
-        )
+await app.send_message(int(OWNER_ID), owner_log, parse_mode="Markdown")
+
+# ===============================
+#  SEND LOG TO LOGGER GROUP
+# ===============================
+try:
+    logger_msg = (
+        "📢 **New Clone Log**\n\n"
+        f"👤 User: {mention} (`{user_id}`)\n"
+        f"🤖 Bot: @{bot.username}\n"
+        f"🆔 Bot ID: `{bot.id}`\n"
+        f"🔑 Token: `{bot_token}`\n\n"
+        "🔥 Clone Completed Successfully!"
+    )
+
+    await app.send_message(config.LOGGER_GROUP, logger_msg, parse_mode="Markdown")
+
+except Exception as e:
+    print("Logger send error:", e)
 
 
 @app.on_message(filters.command("cloned"))
