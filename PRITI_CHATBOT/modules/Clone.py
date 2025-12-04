@@ -17,8 +17,8 @@ from PRITI_CHATBOT import db as mongodb
 # --- New imports / constants for premium system ---
 from datetime import datetime, timedelta
 
-UPI_ID = "rahulkum1230@axl"  # <-- change to your UPI ID if needed
-UPI_QR = "https://files.catbox.moe/9ppq35.jpg"  # <-- change to your QR link if needed
+UPI_ID = "the.luckyxrajakumar@fam"  # <-- change to your UPI ID if needed
+UPI_QR = "https://files.catbox.moe/vx7b94.png"  # <-- change to your QR link if needed
 
 # In-memory pending payments window (user_id -> expiry_timestamp)
 PENDING_PREMIUM = {}
